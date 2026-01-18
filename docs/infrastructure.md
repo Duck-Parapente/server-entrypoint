@@ -55,13 +55,68 @@ Tous les jours à 3h du matin, backup complet de tous les services:
 ```
 
 Le script backup:
-- **Vaultwarden**: Archive complète du dossier `data` (conservée 30 jours sur Google Drive)
+- **Vaultwarden**:
+  - Exécute la commande interne `/vaultwarden backup` dans le conteneur
+  - Exporte uniquement le dernier fichier de backup SQLite créé (`db_YYYYMMDD_HHMMSS.sqlite3`)
+  - Compresse et conserve 30 jours sur Google Drive
 - **Biplace Booking (staging & prod)**:
   - Dump PostgreSQL compressé
   - Fichier `.env` compressé
   - Conservés 7 jours sur Google Drive
 
 Pour plus de détails, voir [scripts/backup.sh](../scripts/backup.sh).
+
+### Restauration des backups
+
+#### Vaultwarden
+
+1. Télécharger le backup depuis Google Drive:
+   ```bash
+   rclone copy gdrive:backup_vaultwarden/db_YYYYMMDD_HHMMSS.sqlite3.gz /tmp/
+   ```
+
+2. Décompresser:
+   ```bash
+   gunzip /tmp/db_YYYYMMDD_HHMMSS.sqlite3.gz
+   ```
+
+3. Arrêter Vaultwarden:
+   ```bash
+   cd /srv/server-entrypoint
+   docker compose stop vaultwarden
+   ```
+
+4. Remplacer la base de données:
+   ```bash
+   cp /tmp/db_YYYYMMDD_HHMMSS.sqlite3 /srv/server-entrypoint/data/db.sqlite3
+   ```
+
+5. Redémarrer Vaultwarden:
+   ```bash
+   docker compose start vaultwarden
+   ```
+
+#### Biplace Booking (staging ou prod)
+
+1. Télécharger les backups depuis Google Drive:
+   ```bash
+   # Remplacer ENV par "staging" ou "prod"
+   rclone copy gdrive:backup_biplace_ENV/ENV_dump_YYYYMMDD_HHMMSS.sql.gz /tmp/
+   rclone copy gdrive:backup_biplace_ENV/ENV_env_YYYYMMDD_HHMMSS.env.gz /tmp/
+   ```
+
+2. Restaurer la base de données avec le script:
+   ```bash
+   cd /srv/ENV-biplace/infra/scripts
+   ./load-dump.sh /tmp/ENV_dump_YYYYMMDD_HHMMSS.sql.gz
+   ```
+
+3. (Optionnel) Restaurer le fichier `.env` si nécessaire:
+   ```bash
+   gunzip /tmp/ENV_env_YYYYMMDD_HHMMSS.env.gz
+   cp /tmp/ENV_env_YYYYMMDD_HHMMSS.env /srv/ENV-biplace/infra/.env
+   docker compose -f infra/docker-compose.yml restart
+   ```
 
 ## Déploiement
 
