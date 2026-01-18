@@ -37,8 +37,11 @@ backup_vaultwarden() {
             echo "Uploading Vaultwarden backup to Google Drive..."
             rclone copy "$VAULT_BACKUP_FILE" "$VAULT_REMOTE"
             
-            echo "Deleting remote Vaultwarden backups older than 30 days..."
-            rclone delete "$VAULT_REMOTE" --min-age 30d
+            echo "Deleting remote Vaultwarden backups older than 7 days..."
+            rclone delete "$VAULT_REMOTE" --min-age 7d
+            
+            echo "Cleaning local Vaultwarden backup files older than 7 days..."
+            find "$VAULT_DATA_DIR" -name "db_*.sqlite3" -type f -mtime +7 -delete
             
             echo "✓ Vaultwarden backup completed: $VAULT_BACKUP_FILE"
         else

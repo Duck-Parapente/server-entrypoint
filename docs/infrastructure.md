@@ -58,7 +58,7 @@ Le script backup:
 - **Vaultwarden**:
   - Exécute la commande interne `/vaultwarden backup` dans le conteneur
   - Exporte uniquement le dernier fichier de backup SQLite créé (`db_YYYYMMDD_HHMMSS.sqlite3`)
-  - Compresse et conserve 30 jours sur Google Drive
+  - Compresse et conserve 7 jours sur Google Drive
 - **Biplace Booking (staging & prod)**:
   - Dump PostgreSQL compressé
   - Fichier `.env` compressé
