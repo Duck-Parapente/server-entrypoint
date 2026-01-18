@@ -1,0 +1,39 @@
+bb-backend-prod.duckparapente.fr {
+    reverse_proxy bb-prod-caddy:80 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    log {
+        output stdout
+        format json
+    }
+}
+
+bb-backend-staging.duckparapente.fr {
+    reverse_proxy bb-staging-caddy:80 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    log {
+        output stdout
+        format json
+    }
+}
+
+vault.duckparapente.fr {
+    reverse_proxy vaultwarden:80 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    log {
+        output stdout
+        format json
+    }
+
+}
