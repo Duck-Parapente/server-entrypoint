@@ -25,6 +25,31 @@ bb-backend-staging.duckparapente.fr {
 }
 
 vault.duckparapente.fr {
+    @admin {
+        path /admin*
+    }
+    
+    handle @admin {
+        # Restrict admin access to specific IP addresses
+        @allowed_ips {
+            remote_ip 176.147.159.63
+            # Add your allowed IP addresses here, one per line
+            # Example: remote_ip 203.0.113.0/24 198.51.100.42
+        }
+
+        handle @allowed_ips {
+            reverse_proxy vaultwarden:80 {
+                header_up X-Real-IP {remote_host}
+                header_up X-Forwarded-For {remote_host}
+                header_up X-Forwarded-Proto {scheme}
+            }
+        }
+
+        handle {
+            respond "Access Denied" 403
+        }
+    }
+
     reverse_proxy vaultwarden:80 {
         header_up X-Real-IP {remote_host}
         header_up X-Forwarded-For {remote_host}
