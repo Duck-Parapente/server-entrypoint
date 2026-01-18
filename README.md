@@ -1,114 +1,114 @@
 # Server Entrypoint
 
-This directory contains the main reverse proxy configuration that serves as the entrypoint for all Duck Parapente services.
+Ce répertoire contient la configuration du reverse proxy principal qui sert de point d'entrée pour tous les services Duck Parapente.
 
 ## Architecture
 
-The setup uses **Caddy** as a reverse proxy to route incoming requests to different backend services based on the domain name. All services communicate through a shared Docker network called `proxy`.
+Le système utilise **Caddy** comme reverse proxy pour router les requêtes entrantes vers différents services backend selon le nom de domaine. Tous les services communiquent via un réseau Docker partagé appelé `proxy`.
 
-## Services Exposed
+## Services exposés
 
 ### 1. Biplace Booking - Production
 - **URL**: `bb-backend-prod.duckparapente.fr`
 - **Backend**: `bb-prod-caddy:80`
-- **Description**: Production environment for the Biplace Booking application
-- **Source**: See the `biplace-booking` repository for backend implementation
+- **Description**: Environnement de production de l'application Biplace Booking
+- **Source**: Voir le dépôt `biplace-booking` pour l'implémentation backend
 
 ### 2. Biplace Booking - Staging
 - **URL**: `bb-backend-staging.duckparapente.fr`
 - **Backend**: `bb-staging-caddy:80`
-- **Description**: Staging environment for testing new features before production deployment
-- **Source**: See the `biplace-booking` repository for backend implementation
+- **Description**: Environnement de staging pour tester les nouvelles fonctionnalités avant la production
+- **Source**: Voir le dépôt `biplace-booking` pour l'implémentation backend
 
-### 3. Vaultwarden (Password Manager)
+### 3. Vaultwarden (Gestionnaire de mots de passe)
 - **URL**: `vault.duckparapente.fr`
 - **Backend**: `vaultwarden:80`
-- **Description**: Self-hosted Bitwarden-compatible password manager
-- **Internal Port**: 8443 (mapped to container port 80)
-- **Data Storage**: `./data` directory
+- **Description**: Gestionnaire de mots de passe auto-hébergé compatible Bitwarden
+- **Port interne**: 8443 (mappé vers le port 80 du conteneur)
+- **Stockage des données**: Répertoire `./data`
 - **Configuration**:
-  - Signups disabled (invite-only)
-  - Admin token protected
-  - Invitations enabled
+  - Inscriptions désactivées (sur invitation uniquement)
+  - Protégé par token admin
+  - Invitations activées
 
-## How It Works
+## Fonctionnement
 
 1. **Caddy Reverse Proxy** (`entrypoint_caddy`):
-   - Listens on ports 80 (HTTP) and 443 (HTTPS)
-   - Automatically handles SSL/TLS certificates via Let's Encrypt
-   - Routes requests based on domain names defined in `Caddyfile`
-   - Forwards appropriate headers (Real IP, Forwarded-For, Protocol)
-   - Logs all requests in JSON format to stdout
+   - Écoute sur les ports 80 (HTTP) et 443 (HTTPS)
+   - Gère automatiquement les certificats SSL/TLS via Let's Encrypt
+   - Route les requêtes selon les noms de domaine définis dans `Caddyfile`
+   - Transmet les en-têtes appropriés (Real IP, Forwarded-For, Protocol)
+   - Journalise toutes les requêtes au format JSON vers stdout
 
-2. **Docker Network** (`proxy`):
-   - External network shared between this entrypoint and backend services
-   - Allows containers to communicate using service names as hostnames
-   - Must be created before starting services: `docker network create proxy`
+2. **Réseau Docker** (`proxy`):
+   - Réseau externe partagé entre ce point d'entrée et les services backend
+   - Permet aux conteneurs de communiquer en utilisant les noms de services comme hostnames
+   - Doit être créé avant de démarrer les services: `docker network create proxy`
 
-3. **Request Flow**:
+3. **Flux des requêtes**:
    ```
    Internet → Caddy (ports 80/443)
             ↓
-            └─ Domain-based routing
+            └─ Routage basé sur le domaine
                ├─ bb-backend-prod.duckparapente.fr → bb-prod-caddy:80
                ├─ bb-backend-staging.duckparapente.fr → bb-staging-caddy:80
                └─ vault.duckparapente.fr → vaultwarden:80
    ```
 
-## Biplace Booking Backend
+## Backend Biplace Booking
 
-The Biplace Booking application is a separate project located in the `biplace-booking` repository. Each environment (production and staging) runs its own instance with:
+L'application Biplace Booking est un projet séparé situé dans le dépôt `biplace-booking`. Chaque environnement (production et staging) exécute sa propre instance avec:
 
-- **Backend**: NestJS API server
-- **Frontend**: Nuxt.js application
-- **Database**: PostgreSQL with Prisma ORM
-- **Internal Reverse Proxy**: Caddy (routes between frontend and backend)
+- **Backend**: Serveur API NestJS
+- **Frontend**: Application Nuxt.js
+- **Base de données**: PostgreSQL avec Prisma ORM
+- **Reverse Proxy interne**: Caddy (route entre frontend et backend)
 
-The backend services (`bb-prod-caddy` and `bb-staging-caddy`) are defined in the `biplace-booking` repository's infrastructure setup and must be running on the same Docker `proxy` network.
+Les services backend (`bb-prod-caddy` et `bb-staging-caddy`) sont définis dans la configuration d'infrastructure du dépôt `biplace-booking` et doivent être exécutés sur le même réseau Docker `proxy`.
 
-## Setup
+## Installation
 
-1. Create the shared Docker network:
+1. Créer le réseau Docker partagé:
    ```bash
    docker network create proxy
    ```
 
-2. Start the services:
+2. Démarrer les services:
    ```bash
    docker-compose up -d
    ```
 
-3. Ensure backend services from `biplace-booking` are running and connected to the `proxy` network.
+3. S'assurer que les services backend de `biplace-booking` sont en cours d'exécution et connectés au réseau `proxy`.
 
-## Data Persistence
+## Persistance des données
 
-- **Vaultwarden**: Data is stored in `./data` directory
-  - `db.sqlite3`: Main database
-  - `db.sqlite3-shm`, `db.sqlite3-wal`: SQLite write-ahead log files
-  - `tmp/`: Temporary files
+- **Vaultwarden**: Les données sont stockées dans le répertoire `./data`
+  - `db.sqlite3`: Base de données principale
+  - `db.sqlite3-shm`, `db.sqlite3-wal`: Fichiers write-ahead log SQLite
+  - `tmp/`: Fichiers temporaires
 
 ## Logs
 
-View Caddy logs:
+Voir les logs de Caddy:
 ```bash
 docker logs -f caddy-entrypoint
 ```
 
-View Vaultwarden logs:
+Voir les logs de Vaultwarden:
 ```bash
 docker logs -f vaultwarden
 ```
 
 ## Backups
 
-Automated daily backups are configured for all services (Vaultwarden and Biplace Booking databases). Backups are stored on Google Drive with automatic retention policies.
+Des sauvegardes automatiques quotidiennes sont configurées pour tous les services (Vaultwarden et bases de données Biplace Booking). Les backups sont stockés sur Google Drive avec des politiques de rétention automatiques.
 
-For detailed information about backup configuration, restore procedures, and infrastructure setup, see [`docs/infrastructure.md`](docs/infrastructure.md).
+Pour plus d'informations sur la configuration des backups, les procédures de restauration et la configuration de l'infrastructure, voir [`docs/infrastructure.md`](docs/infrastructure.md).
 
-## Security Notes
+## Notes de sécurité
 
-- All traffic is automatically encrypted with HTTPS via Caddy's automatic HTTPS
-- Vaultwarden is configured with signups disabled
-- Admin access to Vaultwarden requires the `ADMIN_TOKEN` environment variable
-- Invitations can be sent from the admin panel
-- Backups are encrypted in transit to Google Drive
+- Tout le trafic est automatiquement chiffré en HTTPS via le HTTPS automatique de Caddy
+- Vaultwarden est configuré avec les inscriptions désactivées
+- L'accès admin à Vaultwarden nécessite la variable d'environnement `ADMIN_TOKEN`
+- Les invitations peuvent être envoyées depuis le panneau d'administration
+- Les backups sont chiffrés en transit vers Google Drive
