@@ -7,6 +7,8 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    environment:
+      - ALLOWED_IP=${ALLOWED_IP}
     networks:
       - proxy
   vaultwarden:
@@ -18,7 +20,7 @@ services:
       - "8443:80"
     environment:
       SIGNUPS_ALLOWED: "false"
-      ADMIN_TOKEN: "VERY_LONG_RANDOM_STRING"
+      ADMIN_TOKEN: "${ADMIN_TOKEN}"
       INVITATIONS_ALLOWED: "true"
     networks:
       - proxy
