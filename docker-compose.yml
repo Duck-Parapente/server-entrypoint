@@ -20,6 +20,8 @@ services:
       SIGNUPS_ALLOWED: "false"
       ADMIN_TOKEN: "VERY_LONG_RANDOM_STRING"
       INVITATIONS_ALLOWED: "true"
+    networks:
+      - proxy
 
 networks:
   proxy:
