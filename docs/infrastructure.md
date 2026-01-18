@@ -58,13 +58,21 @@ Le script backup:
 - **Vaultwarden**:
   - Exécute la commande interne `/vaultwarden backup` dans le conteneur
   - Exporte uniquement le dernier fichier de backup SQLite créé (`db_YYYYMMDD_HHMMSS.sqlite3`)
-  - Compresse et conserve 7 jours sur Google Drive
+  - Nettoie les backups locaux de plus de 7 jours dans le dossier `data/`
+  - Compresse et envoie sur Google Drive (conservé 7 jours)
 - **Biplace Booking (staging & prod)**:
   - Dump PostgreSQL compressé
   - Fichier `.env` compressé
   - Conservés 7 jours sur Google Drive
 
 Pour plus de détails, voir [scripts/backup.sh](../scripts/backup.sh).
+
+#### Exécution manuelle
+
+```bash
+cd /srv/server-entrypoint
+./scripts/backup.sh
+```
 
 ### Restauration des backups
 

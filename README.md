@@ -101,63 +101,9 @@ docker logs -f vaultwarden
 
 ## Backups
 
-### Automated Backup System
+Automated daily backups are configured for all services (Vaultwarden and Biplace Booking databases). Backups are stored on Google Drive with automatic retention policies.
 
-The `scripts/backup.sh` script handles automated backups for all services managed by this entrypoint. It runs daily via cron and performs:
-
-#### What Gets Backed Up
-
-1. **Vaultwarden Data** (`./data` directory):
-   - SQLite database (`db.sqlite3`)
-   - All user data and attachments
-   - Backed up as a compressed tar archive
-   - Retained for 30 days on Google Drive
-
-2. **Biplace Booking Databases** (staging & production):
-   - PostgreSQL database dumps
-   - Environment configuration files (`.env`)
-   - Retained for 7 days on Google Drive
-
-#### Backup Process
-
-The script automatically:
-- Creates compressed backups of all services
-- Uploads to Google Drive using `rclone`
-- Cleans up old backups based on retention policies
-- Logs all operations to `/var/log/backup.log`
-
-#### Prerequisites
-
-- **rclone** must be configured with a `gdrive` remote ([setup guide](https://rclone.org/drive/#making-your-own-client-id))
-- The script must have access to `/var/backups/server-entrypoint` directory
-- Docker containers must be running for database backups
-
-#### Cron Configuration
-
-Add to crontab for daily backups at 3:00 AM:
-
-```bash
-0 3 * * * /path/to/server-entrypoint/scripts/backup.sh >> /var/log/backup.log 2>&1
-```
-
-#### Manual Backup
-
-To run a backup manually:
-
-```bash
-./scripts/backup.sh
-```
-
-#### Restore Process
-
-**Vaultwarden:**
-1. Download the backup from Google Drive
-2. Stop the Vaultwarden container
-3. Extract the archive: `tar -xzf vaultwarden_YYYY_MM_DD_HHMMSS.tar.gz -C ./`
-4. Restart the container
-
-**Biplace Booking:**
-Refer to the `biplace-booking` repository documentation for database restore procedures.
+For detailed information about backup configuration, restore procedures, and infrastructure setup, see [`docs/infrastructure.md`](docs/infrastructure.md).
 
 ## Security Notes
 
