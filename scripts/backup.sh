@@ -15,25 +15,37 @@ BIPLACE_BASE_DIR="/srv"
 # Function to backup Vaultwarden data
 backup_vaultwarden() {
     local VAULT_DATA_DIR="$SERVER_DIR/data"
-    local VAULT_BACKUP_NAME="vaultwarden_${DATE}.tar.gz"
-    local VAULT_BACKUP_FILE="$BACKUP_DIR/$VAULT_BACKUP_NAME"
     local VAULT_REMOTE="gdrive:backup_vaultwarden"
     
     echo ""
     echo "=== VAULTWARDEN BACKUP ==="
-    if [ -d "$VAULT_DATA_DIR" ]; then
-        echo "Backing up Vaultwarden data from: $VAULT_DATA_DIR"
-        tar -czf "$VAULT_BACKUP_FILE" -C "$(dirname "$VAULT_DATA_DIR")" "$(basename "$VAULT_DATA_DIR")"
+    
+    # Run Vaultwarden backup command
+    echo "Running Vaultwarden backup command..."
+    if docker compose -f "$SERVER_DIR/docker-compose.yml" exec -T vaultwarden /vaultwarden backup; then
+        # Find the latest backup file (db_*.sqlite3)
+        local LATEST_BACKUP=$(ls -t "$VAULT_DATA_DIR"/db_*.sqlite3 2>/dev/null | head -n 1)
         
-        echo "Uploading Vaultwarden backup to Google Drive..."
-        rclone copy "$VAULT_BACKUP_FILE" "$VAULT_REMOTE"
-        
-        echo "Deleting remote Vaultwarden backups older than 30 days..."
-        rclone delete "$VAULT_REMOTE" --min-age 30d
-        
-        echo "✓ Vaultwarden backup completed: $VAULT_BACKUP_FILE"
+        if [ -n "$LATEST_BACKUP" ]; then
+            local BACKUP_FILENAME=$(basename "$LATEST_BACKUP")
+            local VAULT_BACKUP_FILE="$BACKUP_DIR/$BACKUP_FILENAME.gz"
+            
+            echo "Latest backup file: $BACKUP_FILENAME"
+            echo "Compressing backup..."
+            gzip -c "$LATEST_BACKUP" > "$VAULT_BACKUP_FILE"
+            
+            echo "Uploading Vaultwarden backup to Google Drive..."
+            rclone copy "$VAULT_BACKUP_FILE" "$VAULT_REMOTE"
+            
+            echo "Deleting remote Vaultwarden backups older than 30 days..."
+            rclone delete "$VAULT_REMOTE" --min-age 30d
+            
+            echo "✓ Vaultwarden backup completed: $VAULT_BACKUP_FILE"
+        else
+            echo "⚠ No backup file found in $VAULT_DATA_DIR"
+        fi
     else
-        echo "⚠ Vaultwarden data directory not found: $VAULT_DATA_DIR"
+        echo "⚠ Vaultwarden backup command failed"
     fi
 }
 
