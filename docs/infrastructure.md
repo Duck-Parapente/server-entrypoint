@@ -48,10 +48,10 @@ ssh duck-tower
 
 ### Backup automatique
 
-Tous les jours à 3h du matin, backup complet de tous les services:
+Tous les jours à 3h30 et 18h30 (UTC), backup complet de tous les services:
 
 ```bash
-0 3 * * * /srv/server-entrypoint/scripts/backup.sh >> /var/log/backup.log 2>&1
+30 3,18 * * * /srv/server-entrypoint/scripts/backup.sh >> /var/log/backup.log 2>&1
 ```
 
 Le script backup:
